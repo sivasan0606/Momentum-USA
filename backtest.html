@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S&P 500 Momentum Backtest Lab</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151b2b;
+      --border: #242f48;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #10b981;
+      --red: #ef4444;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; line-height: 1.5; }
+    .container { max-width: 1250px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    h1 { font-size: 1.6rem; color: #fff; font-weight: 700; }
+    .nav-links a { color: var(--accent); text-decoration: none; margin-left: 18px; font-weight: 500; font-size: 0.95rem; }
+    .nav-links a:hover { text-decoration: underline; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: background 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-run { background: #059669; font-size: 1rem; padding: 10px 24px; }
+    .btn-run:hover { background: #047857; }
+    .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+    .controls-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+    .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; align-items: flex-end; }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-group label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+    .control-group input, .control-group select { background: #0b0f19; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 8px 12px; font-size: 0.95rem; }
+    .control-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; padding-top: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .card-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .card-val { font-size: 1.6rem; font-weight: 700; color: #fff; }
+    .card-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+    .text-green { color: var(--green); }
+    .text-red { color: var(--red); }
+    .chart-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+    .chart-title { font-size: 1.1rem; color: #fff; font-weight: 600; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    th, td { padding: 12px 16px; text-align: left; font-size: 0.9rem; }
+    th { background: #1c2438; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+    .badge-win { background: rgba(16, 185, 129, 0.2); color: var(--green); }
+    .badge-loss { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>📊 S&P 500 Momentum Backtest Lab</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">Run Custom Jegadeesh &amp; Titman (1993) Simulations on S&P 500 Equities</p>
+      </div>
+      <div class="nav-links">
+        <a href="advisor.html">🎯 Momentum Advisor</a>
+        <a href="portfolio.html">💼 Portfolio Tracker</a>
+      </div>
+    </header>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+      <div class="controls-grid">
+        <div class="control-group">
+          <label>Strategy Model</label>
+          <select id="modelSelect">
+            <option value="A" selected>Model A: Decile / Top-N</option>
+            <option value="B">Model B: WRSS Deviation</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Holdings Cap (N)</label>
+          <input type="number" id="maxStocksInput" value="6" min="3" max="30" />
+        </div>
+
+        <div class="control-group">
+          <label>Formation J (mo)</label>
+          <input type="number" id="jInput" value="12" min="3" max="24" />
+        </div>
+
+        <div class="control-group">
+          <label>Holding K (mo)</label>
+          <input type="number" id="kInput" value="3" min="1" max="12" />
+        </div>
+
+        <div class="control-group">
+          <label>Start Date</label>
+          <input type="date" id="startDateInput" value="2016-01-01" />
+        </div>
+
+        <div class="control-group">
+          <label>End Date</label>
+          <input type="date" id="endDateInput" value="2026-09-01" />
+        </div>
+
+        <div class="control-group">
+          <label>Initial Capital ($)</label>
+          <input type="number" id="capitalInput" value="100000" step="10000" />
+        </div>
+
+        <div class="control-group">
+          <div class="checkbox-row">
+            <input type="checkbox" id="smaCheckbox" checked />
+            <label for="smaCheckbox" style="cursor: pointer; text-transform: none; color: #fff;">200-Day SMA Filter</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="longShortCheckbox" />
+            <label for="longShortCheckbox" style="cursor: pointer; text-transform: none; color: #fff;">Long-Short Decile</label>
+          </div>
+        </div>
+
+        <div class="control-group" style="grid-column: span 1;">
+          <button class="btn btn-run" id="runBtn" onclick="runBacktest()">
+            <span id="btnText">🚀 Run Backtest</span>
+            <span id="btnSpinner" class="spinner" style="display: none;"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="grid" id="kpiGrid">
+      <div class="card">
+        <div class="card-title">Portfolio Final Value</div>
+        <div class="card-val" id="finalVal">$0</div>
+        <div class="card-sub text-green" id="totalRet">+0.0% Total Return</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Strategy CAGR (Annualized)</div>
+        <div class="card-val" id="cagrVal">0.0%</div>
+        <div class="card-sub text-green" id="cagrDiff">+0.0% vs S&P 500</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sharpe Ratio (Rf=2%)</div>
+        <div class="card-val" id="sharpeVal">0.00</div>
+        <div class="card-sub" id="sharpeDiff">S&P 500: 0.91</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Maximum Drawdown</div>
+        <div class="card-val text-red" id="maxDdVal">0.0%</div>
+        <div class="card-sub" id="benchDdVal">S&P 500: -23.9%</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Annualized Jensen's Alpha</div>
+        <div class="card-val" id="alphaVal" style="color: var(--purple);">+0.0%</div>
+        <div class="card-sub" id="alphaSub">Beta: 1.00 | t-stat: 0.00</div>
+      </div>
+    </div>
+
+    <!-- Equity Curve Chart -->
+    <div class="chart-container">
+      <div class="chart-title">📈 Cumulative Equity Curve: Strategy vs S&amp;P 500 (SPY)</div>
+      <canvas id="equityChart" height="100"></canvas>
+    </div>
+
+    <!-- Drawdown Chart -->
+    <div class="chart-container">
+      <div class="chart-title">🌊 Underwater Drawdown Curve</div>
+      <canvas id="drawdownChart" height="60"></canvas>
+    </div>
+
+    <!-- Annual Returns Table -->
+    <h2 style="font-size: 1.2rem; margin-bottom: 8px; color: #fff;">📅 Year-by-Year Performance vs S&amp;P 500</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Strategy Return (%)</th>
+          <th>S&P 500 (SPY) Return (%)</th>
+          <th>Excess Alpha (%)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="annualTableBody">
+        <!-- Injected dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let equityChartInstance = null;
+    let drawdownChartInstance = null;
+
+    async function runBacktest() {
+      const btn = document.getElementById("runBtn");
+      const btnText = document.getElementById("btnText");
+      const btnSpinner = document.getElementById("btnSpinner");
+
+      btn.disabled = true;
+      btnText.innerText = "Simulating...";
+      btnSpinner.style.display = "inline-block";
+
+      const params = new URLSearchParams({
+        model: document.getElementById("modelSelect").value,
+        max_stocks: document.getElementById("maxStocksInput").value,
+        j: document.getElementById("jInput").value,
+        k: document.getElementById("kInput").value,
+        start: document.getElementById("startDateInput").value,
+        end: document.getElementById("endDateInput").value,
+        capital: document.getElementById("capitalInput").value,
+        use_sma: document.getElementById("smaCheckbox").checked,
+        long_short: document.getElementById("longShortCheckbox").checked,
+      });
+
+      try {
+        const response = await fetch(`/api/backtest?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error("Backtest failed: " + (await response.text()));
+        }
+        const data = await response.json();
+        renderResults(data);
+      } catch (err) {
+        alert("Error executing backtest: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btnText.innerText = "🚀 Run Backtest";
+        btnSpinner.style.display = "none";
+      }
+    }
+
+    function renderResults(data) {
+      const m = data.metrics;
+
+      // Update KPIs
+      document.getElementById("finalVal").innerText = "$" + Math.round(m.final_value).toLocaleString();
+      document.getElementById("totalRet").innerText = `+${m.total_return_pct.toLocaleString(undefined, {maximumFractionDigits: 1})}% Total Return`;
+
+      document.getElementById("cagrVal").innerText = `${m.cagr_pct.toFixed(1)}%`;
+      const cagrDiff = m.cagr_pct - m.benchmark_cagr_pct;
+      document.getElementById("cagrDiff").innerText = `${cagrDiff >= 0 ? '+' : ''}${cagrDiff.toFixed(1)}% vs S&P 500 (${m.benchmark_cagr_pct.toFixed(1)}%)`;
+
+      document.getElementById("sharpeVal").innerText = m.sharpe_ratio.toFixed(2);
+      document.getElementById("sharpeDiff").innerText = `S&P 500: ${m.benchmark_sharpe.toFixed(2)} | Sortino: ${m.sortino_ratio.toFixed(2)}`;
+
+      document.getElementById("maxDdVal").innerText = `${m.max_drawdown_pct.toFixed(1)}%`;
+      document.getElementById("benchDdVal").innerText = `S&P 500: ${m.benchmark_max_drawdown_pct.toFixed(1)}% | Calmar: ${m.calmar_ratio.toFixed(2)}`;
+
+      document.getElementById("alphaVal").innerText = `${m.annual_alpha_pct >= 0 ? '+' : ''}${m.annual_alpha_pct.toFixed(1)}%`;
+      document.getElementById("alphaSub").innerText = `Beta: ${m.beta.toFixed(2)} | t-stat: ${m.alpha_tstat.toFixed(2)} (${Math.abs(m.alpha_tstat) >= 1.96 ? 'p<0.05' : 'n.s.'})`;
+
+      // Render Charts
+      const curve = data.equity_curve;
+      const labels = curve.map(c => c.date);
+      const stratValues = curve.map(c => c.equity);
+      const benchValues = curve.map(c => c.bench_equity);
+      const stratDD = curve.map(c => c.drawdown * 100);
+      const benchDD = curve.map(c => c.bench_drawdown * 100);
+
+      // Equity Chart
+      if (equityChartInstance) equityChartInstance.destroy();
+      const ctx1 = document.getElementById("equityChart").getContext("2d");
+      equityChartInstance = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: `JT Strategy (CAGR ${m.cagr_pct.toFixed(1)}%)`,
+              data: stratValues,
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.1,
+              pointRadius: 0,
+            },
+            {
+              label: `S&P 500 SPY (CAGR ${m.benchmark_cagr_pct.toFixed(1)}%)`,
+              data: benchValues,
+              borderColor: '#94a3b8',
+              borderDash: [5, 5],
+              borderWidth: 1.8,
+              tension: 0.1,
+              pointRadius: 0,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#e2e8f0' } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: $${Math.round(ctx.parsed.y).toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', callback: (v) => '$' + v.toLocaleString() } }
+          }
+        }
+      });
+
+      // Drawdown Chart
+      if (drawdownChartInstance) drawdownChartInstance.destroy();
+      const ctx2 = document.getElementById("drawdownChart").getContext("2d");
+      drawdownChartInstance = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Strategy Drawdown (%)',
+              data: stratDD,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.25)',
+              fill: true,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+            {
+              label: 'SPY Drawdown (%)',
+              data: benchDD,
+              borderColor: '#64748b',
+              borderDash: [3, 3],
+              borderWidth: 1.2,
+              pointRadius: 0,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e2e8f0' } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', callback: (v) => v.toFixed(0) + '%' } }
+          }
+        }
+      });
+
+      // Annual Table
+      const tbody = document.getElementById("annualTableBody");
+      tbody.innerHTML = "";
+      data.annual_returns.forEach(r => {
+        const isWin = r["Win"] === "WIN";
+        const badge = isWin ? `<span class="badge badge-win">OUTPERFORM</span>` : `<span class="badge badge-loss">UNDERPERFORM</span>`;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${r.Year}</strong></td>
+          <td style="color: ${r["Strategy Return (%)"] >= 0 ? '#34d399' : '#f87171'}; font-weight: 600;">${r["Strategy Return (%)"] >= 0 ? '+' : ''}${r["Strategy Return (%)"].toFixed(2)}%</td>
+          <td style="color: ${r["S&P 500 Return (%)"] >= 0 ? '#94a3b8' : '#f87171'};">${r["S&P 500 Return (%)"] >= 0 ? '+' : ''}${r["S&P 500 Return (%)"].toFixed(2)}%</td>
+          <td style="color: ${r["Excess Return (%)"] >= 0 ? '#34d399' : '#f87171'}; font-weight: 600;">${r["Excess Return (%)"] >= 0 ? '+' : ''}${r["Excess Return (%)"].toFixed(2)}%</td>
+          <td>${badge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Run automatically on load with defaults
+    window.addEventListener("DOMContentLoaded", () => {
+      runBacktest();
+    });
+  </script>
+</body>
+</html>

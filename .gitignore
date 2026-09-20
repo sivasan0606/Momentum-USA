@@ -1,0 +1,44 @@
+# Credentials & environment
+.env
+*.env
+
+# Generated reports & dynamic exports
+advisor.html
+portfolio.html
+output/
+
+# Data cache (parquet files)
+data/*.parquet
+cache/
+
+# User portfolio data
+holdings.csv
+
+# Runtime & logs
+logs/
+*.log
+*.pid
+server.pid
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
