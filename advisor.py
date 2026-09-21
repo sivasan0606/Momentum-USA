@@ -29,7 +29,7 @@ DEFAULT_PORT = 8770
 
 
 def get_current_momentum_targets(
-    max_stocks: int = 10,
+    max_stocks: int = 6,
     j: int = 12,
     use_sma: bool = True,
     force_refresh: bool = False,
@@ -808,7 +808,7 @@ def print_advisory_guide(targets_df: pd.DataFrame, cash: float, stoploss_pct: fl
 def main():
     parser = argparse.ArgumentParser(description="Generate S&P 500 Momentum Advisor HTML reports.")
     parser.add_argument("--cash", type=float, default=60000.0, help="Available cash for new allocations ($ USD, default: $60,000)")
-    parser.add_argument("--max-stocks", type=int, default=10, help="Target number of stocks (default: 10)")
+    parser.add_argument("--max-stocks", type=int, default=6, help="Target number of stocks (default: 6)")
     parser.add_argument("--stoploss", type=float, default=0.0, help="Optional stop loss threshold (default: 0.0 = disabled)")
     parser.add_argument("--serve", action="store_true", help="Start local web server on port 8770")
     parser.add_argument("--no-browser", action="store_true", help="Do not automatically open browser on start")

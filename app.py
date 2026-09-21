@@ -97,7 +97,7 @@ def main():
         "Max Holdings per Tranche",
         min_value=3,
         max_value=30,
-        value=10,
+        value=6,
         step=1,
         help="Target number of stocks picked per formation slice",
     )

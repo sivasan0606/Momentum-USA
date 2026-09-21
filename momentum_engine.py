@@ -94,7 +94,7 @@ class MomentumEngine:
         end_date: str = "2026-09-01",
         j: int = 12,  # Formation period (months)
         k: int = 3,  # Holding period (months)
-        max_stocks: int = 10,  # Max portfolio concentration
+        max_stocks: int = 6,  # Max portfolio concentration
         use_sma: bool = True,  # 200-day SMA trend filter
         model: str = "A",  # 'A' = Decile/Rank, 'B' = WRSS
         long_short: bool = False,  # True = Long Winners / Short Losers
@@ -507,7 +507,7 @@ def main():
     parser.add_argument("--end", type=str, default="2026-09-01", help="End date (YYYY-MM-DD)")
     parser.add_argument("--j", type=int, default=12, help="Formation period in months (default: 12)")
     parser.add_argument("--k", type=int, default=3, help="Holding period in months (default: 3)")
-    parser.add_argument("--max-stocks", type=int, default=10, help="Max holdings cap (default: 10)")
+    parser.add_argument("--max-stocks", type=int, default=6, help="Max holdings cap (default: 6)")
     parser.add_argument("--model", type=str, default="A", choices=["A", "B"], help="Model A (Decile) or Model B (WRSS)")
     parser.add_argument("--no-sma", action="store_true", help="Disable 200-day SMA trend filter")
     parser.add_argument("--long-short", action="store_true", help="Enable long-short decile strategy")
